@@ -20,20 +20,30 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
         private final SecurityProperties securityProperties;
-
         @Bean
-        public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+        public SecurityWebFilterChain securityWebFilterChain(
+                ServerHttpSecurity http,
+                JwtAuthenticationConverter jwtAuthenticationConverter
+        ) {
                 SecurityProperties.PublicPaths paths = securityProperties.getPublicPaths();
-                JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
+
                 return http
                         .csrf(ServerHttpSecurity.CsrfSpec::disable)
                         .authorizeExchange(auth -> auth
                                 .pathMatchers(paths.getAuth()).permitAll()
-                                .pathMatchers(paths.getStorefront()).permitAll()
+                                .pathMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                                .pathMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                                 .pathMatchers(paths.getSwagger()).permitAll()
                                 .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                                .anyExchange().authenticated())
-                                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(new ReactiveJwtAuthenticationConverterAdapter(jwtAuthenticationConverter))))
+                                .anyExchange().authenticated()
+                        )
+                        .oauth2ResourceServer(oauth2 -> oauth2
+                                .jwt(jwt -> jwt.jwtAuthenticationConverter(
+                                        new ReactiveJwtAuthenticationConverterAdapter(
+                                                jwtAuthenticationConverter
+                                        )
+                                ))
+                        )
                         .build();
         }
 

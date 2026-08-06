@@ -24,6 +24,7 @@
         <module>auth-service</module>
         <module>common-lib</module>
         <module>product-service</module>
+        <module>order-service</module>
     </modules>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
