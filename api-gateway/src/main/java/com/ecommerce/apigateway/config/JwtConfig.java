@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -11,7 +12,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,14 +22,17 @@ public class JwtConfig {
 
     @Bean
     public SecretKey jwtSecretKey(JwtProperties properties) {
-        return new SecretKeySpec(properties.getSecret().getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        byte[] decodedSecret = Base64.getDecoder().decode(properties.getSecret());
+        return new SecretKeySpec(decodedSecret, "HmacSHA256");
     }
 
     @Bean
-    public ReactiveJwtDecoder reactiveJwtDecoder(SecretKey jwtSecretKey) {
-        return NimbusReactiveJwtDecoder.withSecretKey(jwtSecretKey)
+    public ReactiveJwtDecoder reactiveJwtDecoder(SecretKey jwtSecretKey, JwtProperties properties) {
+        NimbusReactiveJwtDecoder decoder = NimbusReactiveJwtDecoder.withSecretKey(jwtSecretKey)
                 .macAlgorithm(MacAlgorithm.HS256)
                 .build();
+        decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(properties.getIssuer()));
+        return decoder;
     }
 
     @Bean(name = "jwtAuthenticationConverter")

@@ -6,7 +6,6 @@ import com.ecommerce.orderservice.entity.Cart;
 import com.ecommerce.orderservice.exception.wrapper.CartNotFoundException;
 import com.ecommerce.orderservice.helper.CartMappingHelper;
 import com.ecommerce.orderservice.repository.CartRepository;
-import com.ecommerce.orderservice.repository.OrderRepository;
 import com.ecommerce.orderservice.security.JwtTokenFilter;
 import com.ecommerce.orderservice.service.CallAPI;
 import com.ecommerce.orderservice.service.CartService;
@@ -15,9 +14,13 @@ import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.*;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 
 
 @RequiredArgsConstructor
@@ -26,24 +29,17 @@ public class CartServiceImpl implements CartService {
     private static final Logger log = LoggerFactory.getLogger(CartServiceImpl.class);
 
     private final CartRepository cartRepository;
-    private final OrderServiceImpl orderService;
-    private final OrderRepository orderRepository;
     private final ModelMapper modelMapper;
     private final CallAPI callAPI;
 
     @Override
     public List<CartDto> findAll() {
         log.info("CartDto List, service; fetch all carts");
-        return cartRepository.findAll()
-                .stream()
-                .map(CartMappingHelper::map)
-                .peek(cartDto -> {
-                    try {
-                        cartDto.setUserDto(callAPI.receiverUserDto(cartDto.getUserDto().getId(), JwtTokenFilter.getTokenFromRequest()));
-                    } catch (Exception e) {
-                        log.error("Error fetching user info: {}", e.getMessage());
-                    }
-                }).toList();
+        Long currentUserId = currentUserId();
+        if (isAdmin()) {
+            return mapCarts(cartRepository.findAll());
+        }
+        return mapCarts(cartRepository.findAllByUserId(currentUserId));
     }
     @Override
     public Page<CartDto> findAll(int page, int size, String sortBy, String sortOrder) {
@@ -51,36 +47,30 @@ public class CartServiceImpl implements CartService {
         Sort sort = Sort.by(Sort.Direction.fromString(sortOrder), sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        List<CartDto> cartDtos = cartRepository.findAll(pageable)
-                .stream()
+        Long currentUserId = currentUserId();
+        Page<Cart> carts = isAdmin()
+                ? cartRepository.findAll(pageable)
+                : cartRepository.findAllByUserId(currentUserId, pageable);
+
+        List<CartDto> cartDtos = carts.stream()
                 .map(CartMappingHelper::map)
-                .peek(cartDto -> {
-                    try {
-                        cartDto.setUserDto(callAPI.receiverUserDto(cartDto.getUserDto().getId(), JwtTokenFilter.getTokenFromRequest()));
-                    } catch (Exception e) {
-                        log.error("Error fetching user info: {}", e.getMessage());
-                    }
-                })
+                .peek(this::attachUser)
                 .toList();
-        return new PageImpl<>(cartDtos, pageable, cartDtos.size());
+        return new PageImpl<>(cartDtos, pageable, carts.getTotalElements());
     }
     @Override
     public CartDto findById(Integer cartId) {
         log.info("CartDto, service; fetch cart by id");
-        CartDto cartDto = cartRepository.findById(cartId)
-                .map(CartMappingHelper::map)
-                .orElseThrow(() -> new CartNotFoundException(String.format("Cart with id: %d not found", cartId)));
-        try {
-            cartDto.setUserDto(callAPI.receiverUserDto(cartDto.getUserDto().getId(), JwtTokenFilter.getTokenFromRequest()));
-        } catch (Exception e) {
-            log.error("Error fetching user info: {}", e.getMessage());
-        }
+        Cart cart = loadCartForCurrentUser(cartId);
+        CartDto cartDto = CartMappingHelper.map(cart);
+        attachUser(cartDto);
         return cartDto;
     }
 
     @Override
     public CartDto save(CartDto cartDto) {
         log.info("CartDto, service; save cart");
+        verifyCartOwnership(cartDto);
         Cart cart = CartMappingHelper.map(cartDto);
         Cart savedCart = cartRepository.save(cart);
         return CartMappingHelper.map(savedCart);
@@ -88,25 +78,69 @@ public class CartServiceImpl implements CartService {
     @Override
     public CartDto update(CartDto cartDto) {
         log.info("CartDto, service; update cart");
+        verifyCartOwnership(cartDto);
         return CartMappingHelper.map(cartRepository.save(CartMappingHelper.map(cartDto)));
     }
 
     @Override
     public CartDto update(Integer cartId, CartDto cartDto) {
         log.info("CartDto, service; update cart with cartId");
-        CartDto existingCartDto = findById(cartId);
+        Cart existingCart = loadCartForCurrentUser(cartId);
+        CartDto existingCartDto = CartMappingHelper.map(existingCart);
         modelMapper.map(cartDto, existingCartDto);
+        verifyCartOwnership(existingCartDto);
         return CartMappingHelper.map(cartRepository.save(CartMappingHelper.map(existingCartDto)));
     }
 
     @Override
     public void deleteById(Integer cartId) {
         log.info("Void, service; delete cart by id");
-        cartRepository.findById(cartId)
-                .ifPresent(cart -> {
-                    orderRepository.deleteAllByCart(cart);
-                    cartRepository.deleteById(cartId);
-                });
+        Cart cart = loadCartForCurrentUser(cartId);
+        cartRepository.delete(cart);
+    }
+
+    private List<CartDto> mapCarts(List<Cart> carts) {
+        return carts.stream()
+                .map(CartMappingHelper::map)
+                .peek(this::attachUser)
+                .toList();
+    }
+
+    private void attachUser(CartDto cartDto) {
+        try {
+            cartDto.setUserDto(callAPI.receiverUserDto(cartDto.getUserId(), JwtTokenFilter.getTokenFromRequest()));
+        } catch (Exception e) {
+            log.error("Error fetching user info: {}", e.getMessage());
+        }
+    }
+
+    private Cart loadCartForCurrentUser(Integer cartId) {
+        if (isAdmin()) {
+            return cartRepository.findById(cartId)
+                    .orElseThrow(() -> new CartNotFoundException(String.format("Cart with id: %d not found", cartId)));
+        }
+        return cartRepository.findByCartIdAndUserId(cartId, currentUserId())
+                .orElseThrow(() -> new AccessDeniedException("You can only access your own carts"));
+    }
+
+    private void verifyCartOwnership(CartDto cartDto) {
+        if (isAdmin()) {
+            return;
+        }
+        Long currentUserId = currentUserId();
+        if (!Objects.equals(currentUserId, cartDto.getUserId())) {
+            throw new AccessDeniedException("You can only manage your own carts");
+        }
+    }
+
+    private Long currentUserId() {
+        return callAPI.receiverCurrentUserDto(JwtTokenFilter.getTokenFromRequest()).getId();
+    }
+
+    private boolean isAdmin() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
     }
 
 }

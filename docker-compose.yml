@@ -39,28 +39,14 @@ services:
         mysql -hmysql -uroot -p"$$MYSQL_ROOT_PASSWORD" -e
         "CREATE DATABASE IF NOT EXISTS authservice;
         CREATE DATABASE IF NOT EXISTS productservice;
+        CREATE DATABASE IF NOT EXISTS orderservice;
+        CREATE DATABASE IF NOT EXISTS inventoryservice;
         CREATE USER IF NOT EXISTS 'ecommerce'@'%' IDENTIFIED BY '$$MYSQL_PASSWORD';
         GRANT ALL PRIVILEGES ON authservice.* TO 'ecommerce'@'%';
         GRANT ALL PRIVILEGES ON productservice.* TO 'ecommerce'@'%';
+        GRANT ALL PRIVILEGES ON orderservice.* TO 'ecommerce'@'%';
+        GRANT ALL PRIVILEGES ON inventoryservice.* TO 'ecommerce'@'%';
         FLUSH PRIVILEGES;"
-    networks:
-      - ecommerce-network
-
-  keycloak:
-    image: quay.io/keycloak/keycloak:26.0
-    container_name: ecommerce-keycloak
-    command: ["start-dev", "--http-port=8080"]
-    environment:
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
-    ports:
-      - "8080:8080"
-    healthcheck:
-      test: ["CMD-SHELL", "ps -ef | grep '[k]eycloak' >/dev/null 2>&1 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
     networks:
       - ecommerce-network
 
@@ -79,15 +65,10 @@ services:
     container_name: ecommerce-api-gateway
     ports:
       - "8888:8888"
-    environment:
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/ecommerce
-      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/certs
     depends_on:
       auth-service:
         condition: service_started
       product-service:
-        condition: service_started
-      keycloak:
         condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8888/actuator/health || exit 1"]
@@ -111,16 +92,13 @@ services:
       MYSQL_USER: ${MYSQL_USER:-ecommerce}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ecommerce}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      KEYCLOAK_SERVER_URL: http://keycloak:8080
-      KEYCLOAK_REALM: ecommerce
+      JWT_SECRET: Zm9vLWJhci1iYXNlNjQtc2VjcmV0LWZvci1sb2NhbC1kZXYtMzIx
       ZIPKIN_URL: http://zipkin:9411
     depends_on:
       mysql:
         condition: service_healthy
       mysql-bootstrap:
         condition: service_completed_successfully
-      keycloak:
-        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8088/actuator/health || exit 1"]
       interval: 10s
@@ -144,6 +122,7 @@ services:
       MYSQL_USER: ${MYSQL_USER:-ecommerce}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ecommerce}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JWT_SECRET: Zm9vLWJhci1iYXNlNjQtc2VjcmV0LWZvci1sb2NhbC1kZXYtMzIx
       ZIPKIN_URL: http://zipkin:9411
     depends_on:
       mysql:
@@ -152,6 +131,67 @@ services:
         condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8086/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 40s
+    networks:
+      - ecommerce-network
+
+  order-service:
+    build:
+      context: .
+      dockerfile: order-service/Dockerfile
+    container_name: ecommerce-order-service
+    ports:
+      - "8084:8084"
+    environment:
+      SERVER_PORT: 8084
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: ${MYSQL_USER:-ecommerce}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ecommerce}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JWT_SECRET: Zm9vLWJhci1iYXNlNjQtc2VjcmV0LWZvci1sb2NhbC1kZXYtMzIx
+      JWT_ISSUER: ecommerce-auth-service
+      ZIPKIN_URL: http://zipkin:9411
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mysql-bootstrap:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8084/actuator/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 40s
+    networks:
+      - ecommerce-network
+  inventory-service:
+    build:
+      context: .
+      dockerfile: inventory-service/Dockerfile
+    container_name: ecommerce-inventory-service
+    ports:
+      - "8082:8082"
+    environment:
+      SERVER_PORT: 8082
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: ${MYSQL_USER:-ecommerce}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ecommerce}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JWT_SECRET: Zm9vLWJhci1iYXNlNjQtc2VjcmV0LWZvci1sb2NhbC1kZXYtMzIx
+      JWT_ISSUER: ecommerce-auth-service
+      ZIPKIN_URL: http://zipkin:9411
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mysql-bootstrap:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 15

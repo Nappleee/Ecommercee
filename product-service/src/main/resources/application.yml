@@ -28,7 +28,7 @@ spring:
     show-sql: false
   liquibase:
     enabled: false
-    change-log: classpath:db/changelog/db.changelog-master.yaml
+    change-log: classpath:db/db.changelog-master.yaml
 
 management:
   endpoints:
@@ -44,6 +44,9 @@ management:
     path: /swagger-ui.html
     oauth:
       use-pkce-with-authorization-code-grant: true
+  zipkin:
+    tracing:
+      endpoint: http://zipkin:9411/api/v2/spans
 ecommerce:
   cors:
     enabled: ${ECOMMERCE_CORS_ENABLED:true}

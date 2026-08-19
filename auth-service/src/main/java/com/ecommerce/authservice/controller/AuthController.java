@@ -8,10 +8,12 @@ import com.ecommerce.authservice.service.AuthService;
 import com.ecommerce.commonlib.viewmodel.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -36,7 +38,18 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ApiResponse<Void> logout() {
+    public ApiResponse<Void> logout(
+            @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader,
+            @Valid @RequestBody(required = false) RefreshTokenRequest request
+    ) {
+        String refreshToken = request == null ? null : request.getRefreshToken();
+        authService.logout(authorizationHeader, refreshToken);
+        return ApiResponse.message("Logged out successfully");
+    }
+
+    @PostMapping("/revoke-refresh-token")
+    public ApiResponse<Void> revokeRefreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+        authService.revokeRefreshToken(request.getRefreshToken());
         return ApiResponse.message("Logged out successfully");
     }
 }

@@ -31,40 +31,40 @@ public class UserController {
     // id
 
     @PutMapping("/{id}")
-    @PreAuthorize("isAuthenticated() and hasAuthority('USER')")
+    @PreAuthorize("hasRole('USER')")
     public ApiResponse<UserResponse> update(@PathVariable Long id,
                                             @Valid @RequestBody UpdateUserRequest request) {
         return ApiResponse.ok(userService.update(id, request), "User updated successfully");
     }
 
     @PutMapping("/me/password")
-    @PreAuthorize("isAuthenticated() and hasAuthority('USER')")
+    @PreAuthorize("hasRole('USER')")
     public ApiResponse<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         userService.changePassword(request);
         return ApiResponse.message("Password change request processed");
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("isAuthenticated() and (hasAuthority('USER') or hasAuthority('ADMIN'))")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         userService.delete(id);
         return ApiResponse.message("User " + id + " deleted successfully");
     }
 
     @GetMapping
-    @PreAuthorize("isAuthenticated() and (hasAuthority('USER') or hasAuthority('ADMIN'))")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ApiResponse<UserResponse> getUserByUsername(@RequestParam String username) {
         return ApiResponse.ok(userMapper.toResponse(userService.findByUsername(username)));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("isAuthenticated() and (hasAuthority('USER') or hasAuthority('ADMIN'))")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ApiResponse<UserResponse> getUserById(@PathVariable Long id) {
         return ApiResponse.ok(userMapper.toResponse(userService.findById(id)));
     }
 
     @GetMapping("/all")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Page<UserResponse>> getAllUsers(@RequestParam(defaultValue = "0") int page,
                                                        @RequestParam(defaultValue = "10") int size,
                                                        @RequestParam(defaultValue = "id") String sortBy,

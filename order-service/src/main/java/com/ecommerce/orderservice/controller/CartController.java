@@ -27,14 +27,14 @@ public class CartController {
     private final CartService cartService;
 
     @GetMapping
-    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<List<CartDto>> findAll() {
         log.info("*** CartDto List, controller; fetch all carts *");
         return ResponseEntity.ok(cartService.findAll());
     }
 
     @GetMapping("/all")
-    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<Page<CartDto>> findAll(@RequestParam(defaultValue = "0") int page,
                                                  @RequestParam(defaultValue = "10") int size,
                                                  @RequestParam(defaultValue = "cartId") String sortBy,
@@ -43,7 +43,7 @@ public class CartController {
     }
 
     @GetMapping("/{cartId}")
-    @PreAuthorize("hasAuthority('USER') or hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<CartDto> findById(@PathVariable("cartId")
                                             @NotBlank(message = "Input must not be blank")
                                             @Valid final String cartId) {
@@ -52,7 +52,7 @@ public class CartController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('USER')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<CartDto> save(@RequestBody
                                         @NotNull(message = "Input must not be NULL!")
                                         @Valid final CartDto cartDto) {
@@ -61,7 +61,7 @@ public class CartController {
     }
 
     @PutMapping
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CartDto> update(@RequestBody
                                           @NotNull(message = "Input must not be NULL")
                                           @Valid final CartDto cartDto) {
@@ -70,7 +70,7 @@ public class CartController {
     }
 
     @PutMapping("/{cartId}")
-    @PreAuthorize("hasAuthority('USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<CartDto> update(@PathVariable("cartId")
                                           @NotBlank(message = "Input must not be blank")
                                           @Valid final String cartId,
@@ -82,7 +82,7 @@ public class CartController {
     }
 
     @DeleteMapping("/{cartId}")
-    @PreAuthorize("hasAuthority('USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<Boolean> deleteById(@PathVariable("cartId") final String cartId) {
         log.info("*** Boolean, resource; delete cart by id *");
         cartService.deleteById(Integer.parseInt(cartId));

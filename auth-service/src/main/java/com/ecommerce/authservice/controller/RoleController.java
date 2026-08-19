@@ -25,7 +25,7 @@ public class RoleController {
     private final RoleService roleService;
 
     @PostMapping("/users/{userId}/assign")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> assignRoles(@PathVariable Long userId, @RequestBody @NotBlank String roleNames) {
         if (!roleService.assignRole(userId, roleNames)) {
             throw BusinessException.of(ErrorCode.CONFLICT);
@@ -34,7 +34,7 @@ public class RoleController {
     }
 
     @PostMapping("/users/{userId}/revoke")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> revokeRoles (@PathVariable Long userId,
                                           @RequestBody @NotBlank String roleNames) {
         if (!roleService.revokeRole(userId, roleNames)) {
@@ -43,7 +43,7 @@ public class RoleController {
         return ApiResponse.message("Roles revoked from user " + userId);
     }
     @GetMapping("/users/{userId}")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<List<String>> getUserRoles(@PathVariable Long userId) {
         return ApiResponse.ok(roleService.getUserRoles(userId));
     }

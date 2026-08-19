@@ -25,14 +25,14 @@ public class OrderController {
     private final OrderService orderService;
 
     @GetMapping
-    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<List<OrderDto>> findAll() {
         log.info("*** OrderDto List, controller; fetch all orders *");
         return ResponseEntity.ok(orderService.findAll());
     }
 
     @GetMapping("/all")
-    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<Page<OrderDto>> findAll(@RequestParam(defaultValue = "0") int page,
                                                   @RequestParam(defaultValue = "10") int size,
                                                   @RequestParam(defaultValue = "orderId") String sortBy,
@@ -41,7 +41,7 @@ public class OrderController {
     }
 
     @GetMapping("/{orderId}")
-    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<OrderDto> findById(@PathVariable("orderId")
                                              @NotBlank(message = "Input must not be blank")
                                              @Valid final String orderId) {
@@ -50,7 +50,7 @@ public class OrderController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('USER')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<OrderDto> save(@RequestBody
                                          @NotNull(message = "Input must not be NULL")
                                          @Valid final OrderDto orderDto) {
@@ -59,7 +59,7 @@ public class OrderController {
     }
 
     @PutMapping
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<OrderDto> update(@RequestBody
                                            @NotNull(message = "Input must not be NULL")
                                            @Valid final OrderDto orderDto) {
@@ -67,7 +67,7 @@ public class OrderController {
         return ResponseEntity.ok(orderService.update(orderDto));
     }
     @PutMapping("/{orderId}")
-    @PreAuthorize("hasAuthority('USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<OrderDto> update(@PathVariable("orderId")
                                            @NotBlank(message = "Input must not be blank")
                                            @Valid final String orderId,
@@ -79,7 +79,7 @@ public class OrderController {
     }
 
     @DeleteMapping("/{orderId}")
-    @PreAuthorize("hasAuthority('USER') or hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<Boolean> deleteById(@PathVariable("orderId") final String orderId) {
         log.info("*** Boolean, resource; delete order by id *");
         orderService.deleteById(Integer.parseInt(orderId));
