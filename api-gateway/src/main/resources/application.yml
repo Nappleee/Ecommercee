@@ -47,6 +47,17 @@ spring:
           uri: http://order-service:8084
           predicates:
             - Path=/api/orders/**
+        # =====================
+        # Inventory-SERVICE  :8082
+        # =====================
+        - id: inventory-service-inventory
+          uri: http://inventory-service:8082
+          predicates:
+            - Path=/api/inventory/**
+        - id: order-service-orders
+          uri: http://order-service:8082
+          predicates:
+            - Path=/api/orders/**
             
 jwt:
   secret: ${JWT_SECRET:Zm9vLWJhci1iYXNlNjQtc2VjcmV0LWZvci1sb2NhbC1kZXYtMzIx}

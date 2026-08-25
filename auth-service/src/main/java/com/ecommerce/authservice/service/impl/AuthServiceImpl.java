@@ -21,11 +21,18 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
+import com.ecommerce.authservice.entity.RefreshToken;
+import com.ecommerce.authservice.repository.RefreshTokenRepository;
+import jakarta.transaction.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -36,8 +43,9 @@ public class AuthServiceImpl implements AuthService {
     private final JwtEncoder jwtEncoder;
     private final JwtDecoder jwtDecoder;
     private final JwtProperties jwtProperties;
-
+    private final RefreshTokenRepository refreshTokenRepository;
     @Override
+    @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByUserName(request.getUserName())) {
             throw new IllegalArgumentException("Username already exists");
@@ -59,6 +67,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByUserName(request.getUsername())
                 .orElseThrow(() -> new BadCredentialsException("Invalid username or password"));
@@ -69,57 +78,149 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public AuthResponse refresh(String refreshToken) {
         Jwt jwt = jwtDecoder.decode(refreshToken);
+
         if (!"refresh".equals(jwt.getClaimAsString("token_type"))) {
             throw new BadCredentialsException("Invalid refresh token");
         }
-        User user = userRepository.findByUserName(jwt.getSubject())
-                .orElseThrow(() -> new BadCredentialsException("Unknown user"));
-        return issueTokens(user);
+
+        if (jwt.getId() == null || jwt.getId().isBlank()) {
+            throw new BadCredentialsException("Invalid refresh token");
+        }
+
+        RefreshToken storedToken = refreshTokenRepository
+                .findByTokenHash(hashToken(refreshToken))
+                .orElseThrow(() -> new BadCredentialsException("Refresh token not found"));
+
+        if (!storedToken.getJti().equals(jwt.getId())) {
+            throw new BadCredentialsException("Invalid refresh token");
+        }
+
+        if (storedToken.isRevoked()) {
+            throw new BadCredentialsException("Refresh token has been revoked");
+        }
+
+        if (storedToken.getExpiresAt().isBefore(Instant.now())) {
+            throw new BadCredentialsException("Refresh token has expired");
+        }
+
+        // Rotation: token cũ không thể dùng lại sau lần refresh này.
+        storedToken.setRevoked(true);
+        storedToken.setRevokedAt(Instant.now());
+
+        // Vì method có @Transactional, Hibernate tự UPDATE token cũ khi transaction kết thúc.
+        return issueTokens(storedToken.getUser());
     }
 
     private AuthResponse issueTokens(User user) {
         Instant now = Instant.now();
-        List<String> roles = user.getRoles().stream().map(role -> role.getName().name()).toList();
-        String accessToken = encodeToken(user.getUserName(), roles, "access", now, jwtProperties.getAccessTokenTtl());
-        String refreshToken = encodeToken(user.getUserName(), roles, "refresh", now, jwtProperties.getRefreshTokenTtl());
+
+        List<String> roles = user.getRoles()
+                .stream()
+                .map(role -> role.getName().name())
+                .toList();
+
+        String accessToken = encodeAccessToken(
+                user.getUserName(),
+                roles,
+                now
+        );
+
+        IssuedRefreshToken issuedRefreshToken = encodeRefreshToken(
+                user.getUserName(),
+                now
+        );
+
+        saveRefreshToken(user, issuedRefreshToken);
+
         return AuthResponse.builder()
                 .tokenType("Bearer")
                 .username(user.getUserName())
                 .roles(roles)
                 .accessToken(accessToken)
-                .refreshToken(refreshToken)
+                .refreshToken(issuedRefreshToken.tokenValue())
                 .expiresAt(now.plus(jwtProperties.getAccessTokenTtl()))
                 .build();
     }
 
-    private String encodeToken(
-        String subject,
-        List<String> roles,
-        String tokenType,
-        Instant issuedAt,
-        java.time.Duration ttl
-) {
-    JwtClaimsSet claims = JwtClaimsSet.builder()
-            .issuer(jwtProperties.getIssuer())
-            .subject(subject)
-            .issuedAt(issuedAt)
-            .expiresAt(issuedAt.plus(ttl))
-            .claim("roles", roles)
-            .claim("token_type", tokenType)
+    private String encodeAccessToken(
+            String subject,
+            List<String> roles,
+            Instant issuedAt
+    ) {
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .issuer(jwtProperties.getIssuer())
+                .subject(subject)
+                .issuedAt(issuedAt)
+                .expiresAt(issuedAt.plus(jwtProperties.getAccessTokenTtl()))
+                .claim("roles", roles)
+                .claim("token_type", "access")
+                .build();
+
+        return encode(claims);
+    }
+    private IssuedRefreshToken encodeRefreshToken(
+            String subject,
+            Instant issuedAt
+    ) {
+        String jti = UUID.randomUUID().toString();
+        Instant expiresAt = issuedAt.plus(jwtProperties.getRefreshTokenTtl());
+
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .issuer(jwtProperties.getIssuer())
+                .subject(subject)
+                .id(jti)
+                .issuedAt(issuedAt)
+                .expiresAt(expiresAt)
+                .claim("token_type", "refresh")
+                .build();
+
+        return new IssuedRefreshToken(
+                encode(claims),
+                jti,
+                expiresAt
+        );
+    }
+    private String encode(JwtClaimsSet claims) {
+        JwsHeader jwsHeader = JwsHeader.with(MacAlgorithm.HS256)
+                .type("JWT")
+                .build();
+
+        return jwtEncoder.encode(
+                JwtEncoderParameters.from(jwsHeader, claims)
+        ).getTokenValue();
+    }
+    private void saveRefreshToken(User user, IssuedRefreshToken issuedRefreshToken) {
+    RefreshToken refreshToken = RefreshToken.builder()
+            .user(user)
+            .jti(issuedRefreshToken.jti())
+            .tokenHash(hashToken(issuedRefreshToken.tokenValue()))
+            .expiresAt(issuedRefreshToken.expiresAt())
+            .revoked(false)
             .build();
 
-    JwsHeader jwsHeader = JwsHeader.with(MacAlgorithm.HS256)
-            .type("JWT")
-            .build();
+    refreshTokenRepository.save(refreshToken);
+    }
 
-    JwtEncoderParameters parameters =
-            JwtEncoderParameters.from(jwsHeader, claims);
+    private String hashToken(String token) {
+        try {
+            byte[] hash = MessageDigest.getInstance("SHA-256")
+                    .digest(token.getBytes(StandardCharsets.UTF_8));
 
-    return jwtEncoder.encode(parameters).getTokenValue();
-}
+            return java.util.HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 algorithm is unavailable", exception);
+        }
+    }
 
+    private record IssuedRefreshToken(
+            String tokenValue,
+            String jti,
+            Instant expiresAt
+    ) {
+    }
     private Set<Role> resolveRoles(Set<String> requestedRoles) {
         Set<String> effectiveRoles = requestedRoles == null || requestedRoles.isEmpty()
                 ? Set.of(RoleName.USER.name())
@@ -132,5 +233,37 @@ public class AuthServiceImpl implements AuthService {
             roles.add(role);
         }
         return roles;
+    }
+
+    @Override
+    @Transactional
+    public void logout(String authorizationHeader, String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new BadCredentialsException("Refresh token is required for logout");
+        }
+
+        revokeRefreshTokenInternal(refreshToken);
+    }
+
+    @Override
+    public void revokeAccessToken(String authorizationHeader) {
+        // Access token vẫn stateless và sống ngắn (15 phút).
+        // Chưa có access-token blacklist ở phạm vi hiện tại.
+    }
+
+    @Override
+    @Transactional
+    public void revokeRefreshToken(String refreshToken) {
+        revokeRefreshTokenInternal(refreshToken);
+    }
+
+    private void revokeRefreshTokenInternal(String refreshToken) {
+        refreshTokenRepository.findByTokenHash(hashToken(refreshToken))
+                .ifPresent(token -> {
+                    if (!token.isRevoked()) {
+                        token.setRevoked(true);
+                        token.setRevokedAt(Instant.now());
+                    }
+                });
     }
 }

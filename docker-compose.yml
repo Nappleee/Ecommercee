@@ -41,11 +41,13 @@ services:
         CREATE DATABASE IF NOT EXISTS productservice;
         CREATE DATABASE IF NOT EXISTS orderservice;
         CREATE DATABASE IF NOT EXISTS inventoryservice;
+        CREATE DATABASE IF NOT EXISTS paymentservice;
         CREATE USER IF NOT EXISTS 'ecommerce'@'%' IDENTIFIED BY '$$MYSQL_PASSWORD';
         GRANT ALL PRIVILEGES ON authservice.* TO 'ecommerce'@'%';
         GRANT ALL PRIVILEGES ON productservice.* TO 'ecommerce'@'%';
         GRANT ALL PRIVILEGES ON orderservice.* TO 'ecommerce'@'%';
         GRANT ALL PRIVILEGES ON inventoryservice.* TO 'ecommerce'@'%';
+        GRANT ALL PRIVILEGES ON paymentservice.* TO 'ecommerce'@'%';
         FLUSH PRIVILEGES;"
     networks:
       - ecommerce-network
@@ -93,6 +95,7 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ecommerce}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       JWT_SECRET: Zm9vLWJhci1iYXNlNjQtc2VjcmV0LWZvci1sb2NhbC1kZXYtMzIx
+      JWT_ISSUER: ecommerce-auth-service
       ZIPKIN_URL: http://zipkin:9411
     depends_on:
       mysql:
@@ -198,7 +201,36 @@ services:
       start_period: 40s
     networks:
       - ecommerce-network
-
+  payment-service:
+    build:
+      context: .
+      dockerfile: payment-service/Dockerfile
+    container_name: ecommerce-payment-service
+    ports:
+      - "8085:8085"
+    environment:
+      SERVER_PORT: 8085
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: ${MYSQL_USER:-ecommerce}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ecommerce}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JWT_SECRET: Zm9vLWJhci1iYXNlNjQtc2VjcmV0LWZvci1sb2NhbC1kZXYtMzIx
+      JWT_ISSUER: ecommerce-auth-service
+      ZIPKIN_URL: http://zipkin:9411/api/v2/spans
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mysql-bootstrap:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8085/actuator/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 40s
+    networks:
+      - ecommerce-network
 networks:
   ecommerce-network:
     driver: bridge

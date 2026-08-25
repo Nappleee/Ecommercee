@@ -1,40 +1,50 @@
 package com.ecommerce.productservice.helper;
 
+import java.util.Optional;
+
 import com.ecommerce.productservice.Dto.CategoryDto;
 import com.ecommerce.productservice.entity.Category;
 
-import java.util.Optional;
-
 public interface CategoryMappingHelper {
     static CategoryDto map(final Category category) {
-        final var parentCategory = Optional.ofNullable(category.getParentCategory())
-                .orElseGet(Category::new);
-        return CategoryDto.builder()
+        CategoryDto.CategoryDtoBuilder builder = CategoryDto.builder()
                 .categoryId(category.getCategoryId())
                 .categoryTitle(category.getCategoryTitle())
-                .imageUrl(category.getImageUrl())
-                .parentCategoryDto(
+                .imageUrl(category.getImageUrl());
+
+        if (category.getParentCategory() != null) {
+                Category parent = category.getParentCategory();
+
+                builder.parentCategoryDto(
                         CategoryDto.builder()
-                                .categoryId(parentCategory.getCategoryId())
-                                .categoryTitle(parentCategory.getCategoryTitle())
-                                .imageUrl(parentCategory.getImageUrl())
+                                .categoryId(parent.getCategoryId())
+                                .categoryTitle(parent.getCategoryTitle())
+                                .imageUrl(parent.getImageUrl())
                                 .build()
-                )
-                .build();
-    }
+                );
+        }
+
+        return builder.build();
+        }
     static Category map(CategoryDto categoryDto) {
-        final var parentCategoryDto = Optional.ofNullable(categoryDto.getParentCategoryDto())
-                .orElseGet(CategoryDto::new);
-        return Category.builder()
+        Category.CategoryBuilder builder = Category.builder()
                 .categoryId(categoryDto.getCategoryId())
                 .categoryTitle(categoryDto.getCategoryTitle())
-                .imageUrl(categoryDto.getImageUrl())
-                .parentCategory(Category.builder()
-                        .categoryId(parentCategoryDto.getCategoryId())
-                        .categoryTitle(parentCategoryDto.getCategoryTitle())
-                        .imageUrl(parentCategoryDto.getImageUrl())
-                        .build())
-                .build();
-    }
+                .imageUrl(categoryDto.getImageUrl());
+
+        if (categoryDto.getParentCategoryDto() != null
+                && categoryDto.getParentCategoryDto().getCategoryId() != null) {
+
+                builder.parentCategory(
+                        Category.builder()
+                                .categoryId(
+                                        categoryDto.getParentCategoryDto().getCategoryId()
+                                )
+                                .build()
+                );
+        }
+
+        return builder.build();
+        }
 
 }

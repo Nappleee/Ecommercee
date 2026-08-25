@@ -57,7 +57,7 @@ springdoc:
 ---
 ecommerce:
   security:
-    enabled: ${ECOMMERCE_SECURITY_ENABLED:true}
+    enabled: false
     csrf-disabled: ${ECOMMERCE_SECURITY_CSRF_DISABLED:true}
     stateless-session: ${ECOMMERCE_SECURITY_STATELESS_SESSION:true}
     public-paths: []

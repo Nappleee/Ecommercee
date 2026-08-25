@@ -21,6 +21,11 @@
             <artifactId>common-spring</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.ecommerce.microservices</groupId>
+            <artifactId>common-jwt</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
             <groupId>org.liquibase</groupId>
             <artifactId>liquibase-core</artifactId>
         </dependency>
