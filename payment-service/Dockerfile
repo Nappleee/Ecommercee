@@ -10,6 +10,7 @@ RUN mvn -pl payment-service -am -DskipTests package
 FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
+RUN apk add --no-cache wget
 
 COPY --from=build /workspace/payment-service/target/*.jar app.jar
 
