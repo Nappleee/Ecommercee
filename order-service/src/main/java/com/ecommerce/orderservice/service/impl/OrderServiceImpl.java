@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Objects;
+import java.time.LocalDateTime;
 
 @RequiredArgsConstructor
 @Service
@@ -58,8 +59,7 @@ public class OrderServiceImpl implements OrderService {
                 : orderRepository.findAllByCart_UserId(currentUserId, pageable);
 
         List<OrderDto> orderDtos = orders.stream()
-                .map(OrderMappingHelper::map)
-                .peek(this::attachProduct)
+                .map(this::enrich)
                 .toList();
         return new PageImpl<>(orderDtos, pageable, orders.getTotalElements());
     }
@@ -68,9 +68,7 @@ public class OrderServiceImpl implements OrderService {
     public OrderDto findById(Integer orderId) {
         log.info("OrderDto, service; fetch order by id");
         Order order = loadOrderForCurrentUser(orderId);
-        OrderDto orderDto = OrderMappingHelper.map(order);
-        attachProduct(orderDto);
-        return orderDto;
+        return enrich(OrderMappingHelper.map(order));
     }
 
     @Override
@@ -84,9 +82,13 @@ public class OrderServiceImpl implements OrderService {
     public OrderDto save(OrderDto orderDto) {
         log.info("OrderDto, service; save order");
         verifyCartOwnership(orderDto);
-        Order order = OrderMappingHelper.map(orderDto);
-        order.setStatus(OrderStatus.PENDING);
-        return OrderMappingHelper.map(orderRepository.save(order));
+        if (orderDto.getQuantity() == null || orderDto.getQuantity() <= 0) {
+            throw new IllegalArgumentException("Order quantity must be greater than 0");
+        }
+        orderDto.setOrderDate(orderDto.getOrderDate() == null ? LocalDateTime.now() : orderDto.getOrderDate());
+        orderDto.setStatus(OrderStatus.PENDING.name());
+        callAPI.decrementProductQuantity(orderDto.getProductId(), orderDto.getQuantity());
+        return enrich(OrderMappingHelper.map(orderRepository.save(OrderMappingHelper.map(orderDto))));
     }
 
     @Override
@@ -113,10 +115,23 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.deleteById(orderId);
     }
 
+    @Override
+    public OrderDto cancel(Integer orderId) {
+        Order order = loadOrderForCurrentUser(orderId);
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            return enrich(OrderMappingHelper.map(order));
+        }
+        if (order.getStatus() == OrderStatus.COMPLETED) {
+            throw new IllegalStateException("Completed orders cannot be cancelled");
+        }
+        callAPI.incrementProductQuantity(order.getProductId(), order.getQuantity());
+        order.setStatus(OrderStatus.CANCELLED);
+        return enrich(OrderMappingHelper.map(orderRepository.save(order)));
+    }
+
     private List<OrderDto> mapOrders(List<Order> orders) {
         return orders.stream()
-                .map(order -> OrderMappingHelper.map(order))
-                .peek(this::attachProduct)
+                .map(order -> enrich(OrderMappingHelper.map(order)))
                 .toList();
     }
 
@@ -126,6 +141,17 @@ public class OrderServiceImpl implements OrderService {
         } catch (Exception e) {
             log.error("Error fetching product info: {}", e.getMessage());
         }
+    }
+
+    private OrderDto enrich(OrderDto orderDto) {
+        attachProduct(orderDto);
+        try {
+            orderDto.setOrderedBy(callAPI.receiverUserDto(orderDto.getCartDto().getUserId(),
+                    JwtTokenFilter.getTokenFromRequest()));
+        } catch (Exception e) {
+            log.error("Error fetching order user info: {}", e.getMessage());
+        }
+        return orderDto;
     }
 
     private Order loadOrderForCurrentUser(Integer orderId) {

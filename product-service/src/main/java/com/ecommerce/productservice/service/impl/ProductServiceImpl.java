@@ -102,4 +102,16 @@ public class ProductServiceImpl implements ProductService {
 
         productRepository.save(product);
     }
+
+    @Override
+    public void incrementQuantity(Integer id, Integer amount) {
+        if (amount == null || amount <= 0) {
+            throw new IllegalArgumentException("Amount must be greater than 0");
+        }
+
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
+        product.setQuantity(product.getQuantity() + amount);
+        productRepository.save(product);
+    }
 }
