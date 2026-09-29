@@ -28,6 +28,7 @@
         <module>inventory-service</module>
         <module>common-lib/common-jwt</module>
         <module>payment-service</module>
+        <module>promotion-service</module>
     </modules>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

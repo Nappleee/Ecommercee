@@ -58,6 +58,13 @@ spring:
           uri: http://order-service:8082
           predicates:
             - Path=/api/orders/**
+        # =====================
+        # PROMOTION-SERVICE :8087
+        # =====================
+        - id: promotion-service-promotions
+          uri: http://promotion-service:8087
+          predicates:
+            - Path=/api/v1/backoffice/promotions/**
             
 jwt:
   secret: ${JWT_SECRET:Zm9vLWJhci1iYXNlNjQtc2VjcmV0LWZvci1sb2NhbC1kZXYtMzIx}
