@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 
@@ -76,6 +77,18 @@ public class ProductServiceImpl implements ProductService {
             existingProduct.setCategory(CategoryMappingHelper.map(productDto.getCategoryDto()));
         }
         return ProductMappingHelper.map(productRepository.save(existingProduct));
+    }
+
+    @Override
+    @Transactional
+    public ProductDto decrementQuantity(Integer productId, Integer amount) {
+        if (amount == null || amount <= 0) {
+            throw new IllegalArgumentException("Quantity to decrement must be greater than zero");
+        }
+        if (productRepository.decrementQuantity(productId, amount) == 0) {
+            throw new ProductNotFoundException("Product not found or insufficient stock: " + productId);
+        }
+        return findById(productId);
     }
 
     @Override

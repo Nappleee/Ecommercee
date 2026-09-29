@@ -106,9 +106,15 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public PaymentDto save(PaymentDto paymentDto) {
         log.info("PaymentDto, service; save payment");
-        if (paymentRepository.existsByOrderIdAndIsPayed(paymentDto.getOrderId())) {
-            throw new PaymentNotFoundException("Order has already been paid.");
+        if (paymentRepository.findByOrderId(paymentDto.getOrderId()) != null) {
+            throw new PaymentNotFoundException("Order already has a payment.");
         }
+        OrderDto orderDto = callAPI.receiverPaymentDto(paymentDto.getOrderId(), JwtTokenFilter.getTokenFromRequest());
+        if (orderDto == null || orderDto.getProductId() == null) {
+            throw new PaymentNotFoundException("Order product information is missing.");
+        }
+        int quantity = orderDto.getQuantity() == null ? 1 : orderDto.getQuantity();
+        callAPI.decrementProductQuantity(orderDto.getProductId(), quantity, JwtTokenFilter.getTokenFromRequest());
         PaymentDto savedPaymentDto = PaymentMappingHelper.map(paymentRepository.save(PaymentMappingHelper.map(paymentDto)));
 //        KafkaPaymentDto kafkaPaymentDto = KafkaPaymentDto.builder()
 //                .paymentId(savedPaymentDto.getPaymentId())
