@@ -54,10 +54,6 @@ public final class Order extends AbstractMappedEntity {
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
-    private OrderStatus status;
-
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "cart_id")
     private Cart cart;

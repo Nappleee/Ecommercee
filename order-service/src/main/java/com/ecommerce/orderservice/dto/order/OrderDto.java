@@ -43,7 +43,6 @@ public class OrderDto implements Serializable {
     private OrderStatus status;
     private Integer productId;
     private Integer quantity;
-    private String status;
 
     @JsonProperty("product")
     @JsonInclude(JsonInclude.Include.NON_NULL)
