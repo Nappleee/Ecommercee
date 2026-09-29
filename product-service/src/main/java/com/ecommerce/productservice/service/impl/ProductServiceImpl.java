@@ -83,4 +83,23 @@ public class ProductServiceImpl implements ProductService {
         log.info("Void, service; delete product by id");
         productRepository.delete(ProductMappingHelper.map(findById(productId)));
     }
+    @Override
+    public void decrementQuantity(Integer id, Integer amount) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException(
+                        "Product not found with id: " + id
+                ));
+
+        if (amount == null || amount <= 0) {
+            throw new IllegalArgumentException("Amount must be greater than 0");
+        }
+
+        if (product.getQuantity() < amount) {
+            throw new IllegalArgumentException("Not enough product quantity");
+        }
+
+        product.setQuantity(product.getQuantity() - amount);
+
+        productRepository.save(product);
+    }
 }
