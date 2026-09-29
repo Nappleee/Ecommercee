@@ -237,6 +237,7 @@ services:
       JWT_SECRET: Zm9vLWJhci1iYXNlNjQtc2VjcmV0LWZvci1sb2NhbC1kZXYtMzIx
       JWT_ISSUER: ecommerce-auth-service
       ZIPKIN_URL: http://zipkin:9411/api/v2/spans
+      KAFKA_SERVERS: kafka:9092
       ORDER_SERVICE_URL: http://order-service:8084
       AUTH_SERVICE_URL: http://auth-service:8088
     depends_on:
@@ -248,6 +249,8 @@ services:
         condition: service_healthy
       auth-service:
         condition: service_healthy
+      kafka:
+        condition: service_started
     healthcheck:
       test: [ "CMD-SHELL", "wget -qO- http://localhost:8085/actuator/health || exit 1" ]
       interval: 10s

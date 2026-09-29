@@ -1,11 +1,11 @@
 package com.ecommerce.paymentservice.service.impl;
 
-//import com.ecommerce.paymentservice.constant.KafkaConstant;
-//import com.ecommerce.paymentservice.dto.KafkaPaymentDto;
+import com.ecommerce.paymentservice.constant.KafkaConstant;
+import com.ecommerce.paymentservice.dto.KafkaPaymentDto;
 import com.ecommerce.paymentservice.dto.OrderDto;
 import com.ecommerce.paymentservice.dto.PaymentDto;
 import com.ecommerce.paymentservice.dto.UserDto;
-//import com.ecommerce.paymentservice.event.EventProducer;
+import com.ecommerce.paymentservice.event.EventProducer;
 import com.ecommerce.paymentservice.exception.wrapper.PaymentNotFoundException;
 import com.ecommerce.paymentservice.helper.PaymentMappingHelper;
 import com.ecommerce.paymentservice.repository.PaymentRepository;
@@ -74,7 +74,7 @@ public class PaymentServiceImpl implements PaymentService {
                     }
                 })
                 .toList();
-        return new PageImpl<>(paymentDtos, pageable, paymentDtos.size());
+        return new PageImpl<>(paymentDtos, pageable, paymentRepository.count());
     }
 
     @Override

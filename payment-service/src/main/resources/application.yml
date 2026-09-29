@@ -24,11 +24,11 @@ spring:
     secret: ${JWT_SECRET:Zm9vLWJhci1iYXNlNjQtc2VjcmV0LWZvci1sb2NhbC1kZXYtMzIx}
     issuer: ${JWT_ISSUER:ecommerce-auth-service}
   kafka:
-      bootstrap-servers: ${KAFKA_SERVERS:localhost:9092}
-      producer:
-        retries: 3
-        batch-size: 16384
-        buffer-memory: 33554432
+    bootstrap-servers: ${KAFKA_SERVERS:localhost:9092}
+    producer:
+      retries: 3
+      batch-size: 16384
+      buffer-memory: 33554432
 ---
 payment:
   kafka:

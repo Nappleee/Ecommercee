@@ -23,7 +23,8 @@ public class PaymentController {
 
     @GetMapping("/{paymentId}")
     public ResponseEntity<Payment> getPayment(@PathVariable Long paymentId) {
-        return ResponseEntity.ok(paymentService.getPayment(paymentId));
+        Payment payment = paymentService.getPayment(paymentId);
+        return payment == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(payment);
     }
 
     @GetMapping
@@ -33,6 +34,9 @@ public class PaymentController {
 
     @DeleteMapping("/{paymentId}")
     public ResponseEntity<Void> deletePayment(@PathVariable Long paymentId) {
+        if (paymentService.getPayment(paymentId) == null) {
+            return ResponseEntity.notFound().build();
+        }
         paymentService.deletePayment(paymentId);
         return ResponseEntity.noContent().build();
     }

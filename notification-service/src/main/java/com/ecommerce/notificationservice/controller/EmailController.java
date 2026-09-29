@@ -26,7 +26,7 @@ public class EmailController {
     @PostMapping("/sendMail")
     public String sendMail(@RequestParam(value = "file", required = false) MultipartFile[] files,
                            @RequestParam String to,
-                           @RequestParam String[] cc,
+                           @RequestParam(value = "cc", required = false) String[] cc,
                            @RequestParam String subject,
                            @RequestParam String body) {
         return emailService.sendMail(files, to, cc, subject, body);
