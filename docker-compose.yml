@@ -5,7 +5,6 @@ services:
 
   mysql:
     image: mysql:8.4
-    container_name: ecommerce-mysql
     environment:
       MYSQL_DATABASE: authservice
       MYSQL_USER: ${MYSQL_USER:-ecommerce}
@@ -25,7 +24,6 @@ services:
 
   mysql-bootstrap:
     image: mysql:8.4
-    container_name: ecommerce-mysql-bootstrap
     depends_on:
       mysql:
         condition: service_healthy
@@ -61,7 +59,6 @@ services:
 
   zipkin:
     image: openzipkin/zipkin:3
-    container_name: ecommerce-zipkin
     ports:
       - "9411:9411"
     networks:
@@ -90,7 +87,6 @@ services:
     build:
       context: .
       dockerfile: api-gateway/Dockerfile
-    container_name: ecommerce-api-gateway
     ports:
       - "8888:8888"
     depends_on:
@@ -113,7 +109,6 @@ services:
     build:
       context: .
       dockerfile: auth-service/Dockerfile
-    container_name: ecommerce-auth-service
     ports:
       - "8088:8088"
     environment:
@@ -143,7 +138,6 @@ services:
     build:
       context: .
       dockerfile: product-service/Dockerfile
-    container_name: ecommerce-product-service
     ports:
       - "8086:8086"
     environment:
@@ -173,7 +167,6 @@ services:
     build:
       context: .
       dockerfile: order-service/Dockerfile
-    container_name: ecommerce-order-service
     ports:
       - "8084:8084"
     environment:
@@ -203,7 +196,6 @@ services:
     build:
       context: .
       dockerfile: inventory-service/Dockerfile
-    container_name: ecommerce-inventory-service
     ports:
       - "8082:8082"
     environment:
@@ -233,7 +225,6 @@ services:
     build:
       context: .
       dockerfile: payment-service/Dockerfile
-    container_name: ecommerce-payment-service
     ports:
       - "8085:8085"
     environment:
