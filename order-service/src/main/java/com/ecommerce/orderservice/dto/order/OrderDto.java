@@ -1,5 +1,6 @@
 package com.ecommerce.orderservice.dto.order;
 
+import com.ecommerce.orderservice.entity.OrderStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -38,7 +39,7 @@ public class OrderDto implements Serializable {
 
     private String orderDesc;
     private Double orderFee;
-
+    private OrderStatus status;
     private Integer productId;
 
     @JsonProperty("product")

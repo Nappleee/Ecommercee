@@ -6,3 +6,13 @@ databaseChangeLog:
       changes:
         - sql:
             sql: SELECT 1;
+
+  - changeSet:
+      id: order-service-0002-add-order-status
+      author: codex
+      comment: Add order status to support order cancellation.
+      changes:
+        - sql:
+            sql: >
+              ALTER TABLE orders
+              ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'PENDING';

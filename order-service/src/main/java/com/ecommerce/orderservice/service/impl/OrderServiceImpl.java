@@ -2,6 +2,7 @@ package com.ecommerce.orderservice.service.impl;
 
 import com.ecommerce.orderservice.dto.order.OrderDto;
 import com.ecommerce.orderservice.entity.Order;
+import com.ecommerce.orderservice.entity.OrderStatus;
 import com.ecommerce.orderservice.exception.wrapper.OrderNotFoundException;
 import com.ecommerce.orderservice.helper.OrderMappingHelper;
 import com.ecommerce.orderservice.repository.OrderRepository;
@@ -83,7 +84,9 @@ public class OrderServiceImpl implements OrderService {
     public OrderDto save(OrderDto orderDto) {
         log.info("OrderDto, service; save order");
         verifyCartOwnership(orderDto);
-        return OrderMappingHelper.map(orderRepository.save(OrderMappingHelper.map(orderDto)));
+        Order order = OrderMappingHelper.map(orderDto);
+        order.setStatus(OrderStatus.PENDING);
+        return OrderMappingHelper.map(orderRepository.save(order));
     }
 
     @Override
@@ -153,5 +156,17 @@ public class OrderServiceImpl implements OrderService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication != null && authentication.getAuthorities().stream()
                 .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+    }
+
+
+    @Override
+    public OrderDto cancelOrder(Integer orderId) {
+        log.info("OrderDto, service; cancel order by id: {}", orderId);
+
+        Order order = loadOrderForCurrentUser(orderId);
+
+        order.setStatus(OrderStatus.CANCELLED);
+
+        return OrderMappingHelper.map(orderRepository.save(order));
     }
 }
