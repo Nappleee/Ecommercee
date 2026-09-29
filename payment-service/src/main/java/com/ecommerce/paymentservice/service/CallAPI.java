@@ -25,6 +25,8 @@ public class CallAPI {
         this.orderServiceUrl = orderServiceUrl;
         this.authServiceUrl = authServiceUrl;
     }
+    @Value("${services.product.url:http://product-service:8086}")
+    private String productServiceUrl;
 
     public OrderDto receiverPaymentDto(Integer orderId, String token) {
         return restClientBuilder.baseUrl(orderServiceUrl).build()
@@ -58,5 +60,16 @@ public class CallAPI {
 
     private Long asLong(Object value) {
         return value instanceof Number number ? number.longValue() : null;
+    }
+
+    public void decrementProductQuantity(Integer productId, Integer amount, String token) {
+        restClientBuilder.baseUrl(productServiceUrl).build()
+                .patch()
+                .uri(uriBuilder -> uriBuilder.path("/api/products/{id}/decrement")
+                        .queryParam("amount", amount)
+                        .build(productId))
+                .header(HttpHeaders.AUTHORIZATION, token)
+                .retrieve()
+                .toBodilessEntity();
     }
 }

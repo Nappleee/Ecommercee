@@ -85,7 +85,6 @@ public class ProductServiceImpl implements ProductService {
         if (amount == null || amount <= 0) {
             throw new IllegalArgumentException("Quantity to decrement must be greater than zero");
         }
-
         @Override
         @Transactional
         public ProductDto incrementQuantity(Integer productId, Integer amount) {
