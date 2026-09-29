@@ -32,6 +32,7 @@ public class SecurityConfig {
                         .authorizeExchange(auth -> auth
                                 .pathMatchers(paths.getAuth()).permitAll()
                                 .pathMatchers(paths.getStorefront()).permitAll()
+                                .pathMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                                 .pathMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                                 .pathMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                                 .pathMatchers(paths.getSwagger()).permitAll()
@@ -47,7 +48,6 @@ public class SecurityConfig {
                         )
                         .build();
         }
-
         @Bean
         public CorsWebFilter corsWebFilter() {
                 CorsConfiguration config = new CorsConfiguration();
