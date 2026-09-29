@@ -59,6 +59,7 @@ public class OrderServiceImpl implements OrderService {
                 : orderRepository.findAllByCart_UserId(currentUserId, pageable);
 
         List<OrderDto> orderDtos = orders.stream()
+                .map(OrderMappingHelper::map)
                 .map(this::enrich)
                 .toList();
         return new PageImpl<>(orderDtos, pageable, orders.getTotalElements());
@@ -86,7 +87,7 @@ public class OrderServiceImpl implements OrderService {
             throw new IllegalArgumentException("Order quantity must be greater than 0");
         }
         orderDto.setOrderDate(orderDto.getOrderDate() == null ? LocalDateTime.now() : orderDto.getOrderDate());
-        orderDto.setStatus(OrderStatus.PENDING.name());
+        orderDto.setStatus(OrderStatus.PENDING);
         callAPI.decrementProductQuantity(orderDto.getProductId(), orderDto.getQuantity());
         return enrich(OrderMappingHelper.map(orderRepository.save(OrderMappingHelper.map(orderDto))));
     }
