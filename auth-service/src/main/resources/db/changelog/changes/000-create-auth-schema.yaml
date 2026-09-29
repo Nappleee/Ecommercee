@@ -1,0 +1,128 @@
+databaseChangeLog:
+  - changeSet:
+      id: 000-create-roles
+      author: nappleee
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: roles
+      changes:
+        - createTable:
+            tableName: roles
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_roles
+                    nullable: false
+              - column:
+                  name: role_name
+                  type: VARCHAR(60)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uk_roles_role_name
+
+  - changeSet:
+      id: 001-create-users
+      author: nappleee
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: users
+      changes:
+        - createTable:
+            tableName: users
+            columns:
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_users
+                    nullable: false
+              - column:
+                  name: full_name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: unique_username
+              - column:
+                  name: email
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: unique_email
+              - column:
+                  name: gender
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: phone_number
+                  type: VARCHAR(11)
+              - column:
+                  name: image_url
+                  type: TEXT
+              - column:
+                  name: password_hash
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 002-create-user-roles
+      author: nappleee
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: user_roles
+      changes:
+        - createTable:
+            tableName: user_roles
+            columns:
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: user_roles
+            columnNames: user_id, role_id
+            constraintName: pk_user_roles
+        - addForeignKeyConstraint:
+            baseTableName: user_roles
+            baseColumnNames: user_id
+            constraintName: fk_user_roles_user
+            referencedTableName: users
+            referencedColumnNames: user_id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: user_roles
+            baseColumnNames: role_id
+            constraintName: fk_user_roles_role
+            referencedTableName: roles
+            referencedColumnNames: id
+            onDelete: CASCADE

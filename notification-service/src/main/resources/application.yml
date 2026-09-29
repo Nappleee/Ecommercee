@@ -1,0 +1,82 @@
+server:
+  port: ${SERVER_PORT:8089}
+  shutdown: graceful
+spring:
+  application:
+    name: NOTIFICATION-SERVICE
+
+  threads:
+    virtual:
+      enabled: true
+
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+  mail:
+    protocol: smtp
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            enable: false
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/notificationservice?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true}
+    username: ${SPRING_DATASOURCE_USERNAME:${MYSQL_USER:root}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${MYSQL_PASSWORD:abcd}}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+  kafka:
+    bootstrap.servers: ${KAFKA_SERVERS:kafka:9092}
+
+    producer:
+      retries: 3
+      batch-size: 16384
+      buffer-memory: 33554432
+
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP_ID:notification-group}
+      auto-offset-reset: earliest
+kafka:
+  bootstrap:
+    servers: ${KAFKA_SERVERS:kafka:9092}
+notification:
+  kafka:
+    consumer-group-id: ${KAFKA_CONSUMER_GROUP_ID:notification-group}
+
+management:
+  server:
+    port: ${MANAGEMENT_PORT:9090}
+
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+  endpoint:
+    health:
+      show-details: always
+
+  tracing:
+    sampling:
+      probability: 1.0
+
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_URL:http://zipkin:9411/api/v2/spans}

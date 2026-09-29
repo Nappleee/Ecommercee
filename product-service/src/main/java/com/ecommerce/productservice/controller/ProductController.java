@@ -62,6 +62,21 @@ public class ProductController {
         log.info("ProductDto, resource; update product with productId");
         return ResponseEntity.ok(productService.update(Integer.parseInt(productId), productDto));
     }
+
+    @PatchMapping("/{productId}/decrement")
+    public ResponseEntity<ProductDto> decrementQuantity(
+            @PathVariable Integer productId,
+            @RequestParam(defaultValue = "1") Integer amount) {
+        return ResponseEntity.ok(productService.decrementQuantity(productId, amount));
+    }
+
+    @PatchMapping("/{productId}/increment")
+    public ResponseEntity<ProductDto> incrementQuantity(
+            @PathVariable Integer productId,
+            @RequestParam(defaultValue = "1") Integer amount) {
+        return ResponseEntity.ok(productService.incrementQuantity(productId, amount));
+    }
+
     @DeleteMapping("/{productId}")
     public ResponseEntity<Boolean> deleteById(@PathVariable("productId") final String productId) {
         log.info("Boolean, resource; delete product by id");

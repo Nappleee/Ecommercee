@@ -20,5 +20,7 @@ public interface OrderService {
 
     void deleteById(Integer orderId);
 
+    OrderDto cancel(Integer orderId);
+
     Boolean existsByOrderId(Integer orderId);
 }

@@ -123,6 +123,7 @@ public class AuthServiceImpl implements AuthService {
                 .toList();
 
         String accessToken = encodeAccessToken(
+                user.getId(),
                 user.getUserName(),
                 roles,
                 now
@@ -146,6 +147,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private String encodeAccessToken(
+            Long userId,
             String subject,
             List<String> roles,
             Instant issuedAt
@@ -155,6 +157,7 @@ public class AuthServiceImpl implements AuthService {
                 .subject(subject)
                 .issuedAt(issuedAt)
                 .expiresAt(issuedAt.plus(jwtProperties.getAccessTokenTtl()))
+                .claim("userId", userId)
                 .claim("roles", roles)
                 .claim("token_type", "access")
                 .build();

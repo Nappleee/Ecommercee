@@ -70,6 +70,13 @@ public class CartServiceImpl implements CartService {
     @Override
     public CartDto save(CartDto cartDto) {
         log.info("CartDto, service; save cart");
+        if (cartDto == null) {
+            throw new CartNotFoundException("Cart data must not be null");
+        }
+        if (!isAdmin()) {
+            // The authenticated principal is the source of truth for ownership.
+            cartDto.setUserId(currentUserId());
+        }
         verifyCartOwnership(cartDto);
         Cart cart = CartMappingHelper.map(cartDto);
         Cart savedCart = cartRepository.save(cart);

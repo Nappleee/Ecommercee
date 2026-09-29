@@ -2,6 +2,7 @@ package com.ecommerce.orderservice.service.impl;
 
 import com.ecommerce.orderservice.dto.order.OrderDto;
 import com.ecommerce.orderservice.entity.Order;
+import com.ecommerce.orderservice.entity.OrderStatus;
 import com.ecommerce.orderservice.exception.wrapper.OrderNotFoundException;
 import com.ecommerce.orderservice.helper.OrderMappingHelper;
 import com.ecommerce.orderservice.repository.OrderRepository;
@@ -22,6 +23,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
@@ -82,8 +84,17 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public OrderDto save(OrderDto orderDto) {
         log.info("OrderDto, service; save order");
+        if (orderDto == null || orderDto.getCartDto() == null) {
+            throw new OrderNotFoundException("Order cart must not be null");
+        }
+        if (!isAdmin()) {
+            // Do not trust a client-supplied user id when checking ownership.
+            orderDto.getCartDto().setUserId(currentUserId());
+        }
         verifyCartOwnership(orderDto);
-        return OrderMappingHelper.map(orderRepository.save(OrderMappingHelper.map(orderDto)));
+        Order order = OrderMappingHelper.map(orderDto);
+        order.setStatus(OrderStatus.PENDING);
+        return OrderMappingHelper.map(orderRepository.save(order));
     }
 
     @Override
@@ -108,6 +119,23 @@ public class OrderServiceImpl implements OrderService {
         log.info("Void, service; delete order by id");
         loadOrderForCurrentUser(orderId);
         orderRepository.deleteById(orderId);
+    }
+
+    @Override
+    @Transactional
+    public OrderDto cancel(Integer orderId) {
+        Order order = loadOrderForCurrentUser(orderId);
+        OrderStatus status = order.getStatus() == null ? OrderStatus.PENDING : order.getStatus();
+        if (status == OrderStatus.COMPLETED) {
+            throw new IllegalStateException("Completed orders cannot be cancelled");
+        }
+        if (status == OrderStatus.CANCELLED) return OrderMappingHelper.map(order);
+        if (order.getQuantity() == null || order.getQuantity() <= 0 || order.getProductId() == null) {
+            throw new IllegalStateException("Order has invalid product quantity");
+        }
+        callAPI.incrementProductQuantity(order.getProductId(), order.getQuantity());
+        order.setStatus(OrderStatus.CANCELLED);
+        return OrderMappingHelper.map(orderRepository.save(order));
     }
 
     private List<OrderDto> mapOrders(List<Order> orders) {

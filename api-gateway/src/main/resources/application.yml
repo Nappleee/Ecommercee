@@ -54,18 +54,42 @@ spring:
           uri: http://inventory-service:8082
           predicates:
             - Path=/api/inventory/**
-        - id: order-service-orders
-          uri: http://order-service:8082
+        # =====================
+        # Payment-SERVICE  :8085
+        # =====================
+        - id: payment-service
+          uri: http://payment-service:8085
           predicates:
-            - Path=/api/orders/**
+            - Path=/api/payments/**
         # =====================
         # PROMOTION-SERVICE :8087
         # =====================
         - id: promotion-service-promotions
-          uri: http://promotion-service:8087
+          uri: http://promotion-service:8093
           predicates:
-            - Path=/api/v1/backoffice/promotions/**
-            
+            - Path=/promotion/backoffice/promotions/**
+        # =====================
+        # SHIPPING-SERVICE  :8087
+        # =====================
+        - id: shipping-service
+          uri: http://shipping-service:8087
+          predicates:
+            - Path=/api/shippings/**
+        # =====================
+        # NOTIFICATION-SERVICE  :8089
+        # =====================
+        - id: notification-service-email
+          uri: http://notification-service:8089
+          predicates:
+            - Path=/api/email/**
+        - id: notification-service-notifications
+          uri: http://notification-service:8089
+          predicates:
+            - Path=/api/notifications/**
+        - id: notification-service-payment-notifications
+          uri: http://notification-service:8089
+          predicates:
+            - Path=/api/payment-notifications/**
 jwt:
   secret: ${JWT_SECRET:Zm9vLWJhci1iYXNlNjQtc2VjcmV0LWZvci1sb2NhbC1kZXYtMzIx}
 

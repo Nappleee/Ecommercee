@@ -2,10 +2,14 @@ package com.ecommerce.paymentservice.service.impl;
 
 //import com.ecommerce.paymentservice.constant.KafkaConstant;
 //import com.ecommerce.paymentservice.dto.KafkaPaymentDto;
+import com.ecommerce.paymentservice.constant.KafkaConstant;
+import com.ecommerce.paymentservice.dto.KafkaPaymentDto;
 import com.ecommerce.paymentservice.dto.OrderDto;
 import com.ecommerce.paymentservice.dto.PaymentDto;
 import com.ecommerce.paymentservice.dto.UserDto;
 //import com.ecommerce.paymentservice.event.EventProducer;
+import com.ecommerce.paymentservice.entity.PaymentStatus;
+import com.ecommerce.paymentservice.event.EventProducer;
 import com.ecommerce.paymentservice.exception.wrapper.PaymentNotFoundException;
 import com.ecommerce.paymentservice.helper.PaymentMappingHelper;
 import com.ecommerce.paymentservice.repository.PaymentRepository;
@@ -33,8 +37,8 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final ModelMapper modelMapper;
     private final CallAPI callAPI;
-    //private final EventProducer eventProducer;
-    //private final Gson gson = new Gson();
+    private final EventProducer eventProducer;
+    private final Gson gson = new Gson();
 
     @Override
     public List<PaymentDto> findAll() {
@@ -109,15 +113,20 @@ public class PaymentServiceImpl implements PaymentService {
         if (paymentRepository.existsByOrderIdAndIsPayed(paymentDto.getOrderId())) {
             throw new PaymentNotFoundException("Order has already been paid.");
         }
+        paymentDto.setIsPayed(false);
+        paymentDto.setPaymentStatus(PaymentStatus.NOT_STARTED);
+        paymentDto.setUserId(JwtTokenFilter.getUserIdFromToken());
         PaymentDto savedPaymentDto = PaymentMappingHelper.map(paymentRepository.save(PaymentMappingHelper.map(paymentDto)));
-//        KafkaPaymentDto kafkaPaymentDto = KafkaPaymentDto.builder()
-//                .paymentId(savedPaymentDto.getPaymentId())
-//                .isPayed(savedPaymentDto.getIsPayed())
-//                .paymentStatus(savedPaymentDto.getPaymentStatus())
-//                .orderId(savedPaymentDto.getOrderId())
-//                .userId(savedPaymentDto.getUserId())
-//                .build();
-//        eventProducer.send(KafkaConstant.STATUS_PAYMENT_SUCCESSFUL, gson.toJson(kafkaPaymentDto));
+        UserDto userDto = callAPI.receiverUserDto(savedPaymentDto.getUserId(), JwtTokenFilter.getTokenFromRequest());
+        KafkaPaymentDto kafkaPaymentDto = KafkaPaymentDto.builder()
+                .paymentId(savedPaymentDto.getPaymentId())
+                .isPayed(savedPaymentDto.getIsPayed())
+                .paymentStatus(savedPaymentDto.getPaymentStatus())
+                .orderId(savedPaymentDto.getOrderId())
+                .userId(savedPaymentDto.getUserId())
+                .recipient(userDto == null ? null : userDto.getEmail())
+                .build();
+        eventProducer.send(KafkaConstant.STATUS_PAYMENT_SUCCESSFUL, gson.toJson(kafkaPaymentDto));
         return savedPaymentDto;
     }
 

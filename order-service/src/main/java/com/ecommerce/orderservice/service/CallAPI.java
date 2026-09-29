@@ -36,4 +36,15 @@ public class CallAPI {
                 .retrieve()
                 .body(ProductDto.class);
     }
+
+    public void incrementProductQuantity(Integer productId, Integer amount) {
+        restClientBuilder.baseUrl("http://product-service:8086").build()
+                .patch()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/products/{id}/increment")
+                        .queryParam("amount", amount)
+                        .build(productId))
+                .retrieve()
+                .toBodilessEntity();
+    }
 }

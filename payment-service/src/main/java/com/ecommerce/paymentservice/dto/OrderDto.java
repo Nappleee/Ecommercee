@@ -43,6 +43,7 @@ public class OrderDto implements Serializable {
     private Double orderFee;
     @JsonInclude(Include.NON_NULL)
     private Integer productId;
+    private Integer quantity;
 
     @JsonProperty("product")
     @JsonInclude(JsonInclude.Include.NON_NULL)
