@@ -1,11 +1,11 @@
 package com.ecommerce.paymentservice.service.impl;
 
-//import com.ecommerce.paymentservice.constant.KafkaConstant;
-//import com.ecommerce.paymentservice.dto.KafkaPaymentDto;
+import com.ecommerce.paymentservice.constant.KafkaConstant;
+import com.ecommerce.paymentservice.dto.KafkaPaymentDto;
 import com.ecommerce.paymentservice.dto.OrderDto;
 import com.ecommerce.paymentservice.dto.PaymentDto;
 import com.ecommerce.paymentservice.dto.UserDto;
-//import com.ecommerce.paymentservice.event.EventProducer;
+import com.ecommerce.paymentservice.event.EventProducer;
 import com.ecommerce.paymentservice.exception.wrapper.PaymentNotFoundException;
 import com.ecommerce.paymentservice.helper.PaymentMappingHelper;
 import com.ecommerce.paymentservice.repository.PaymentRepository;
@@ -106,6 +106,12 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public PaymentDto save(PaymentDto paymentDto) {
         log.info("PaymentDto, service; save payment");
+        String token = JwtTokenFilter.getTokenFromRequest();
+        UserDto currentUser = callAPI.receiverCurrentUserDto(token);
+        if (currentUser == null || currentUser.getId() == null) {
+            throw new IllegalStateException("Unable to resolve the authenticated user for payment");
+        }
+        paymentDto.setUserId(currentUser.getId());
         if (paymentRepository.existsByOrderIdAndIsPayed(paymentDto.getOrderId())) {
             throw new PaymentNotFoundException("Order has already been paid.");
         }
@@ -116,6 +122,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .paymentStatus(savedPaymentDto.getPaymentStatus())
                 .orderId(savedPaymentDto.getOrderId())
                 .userId(savedPaymentDto.getUserId())
+                .recipient(currentUser.getEmail())
                 .build();
         eventProducer.send(KafkaConstant.STATUS_PAYMENT_SUCCESSFUL, gson.toJson(kafkaPaymentDto));
         return savedPaymentDto;
