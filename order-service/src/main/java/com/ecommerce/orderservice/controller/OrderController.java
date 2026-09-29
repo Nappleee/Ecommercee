@@ -96,13 +96,4 @@ public class OrderController {
     public ResponseEntity<Boolean> existsByOrderId(@RequestParam Integer orderId) {
         return ResponseEntity.ok(orderService.existsByOrderId(orderId));
     }
-    @PatchMapping("/{orderId}/cancel")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-    public ResponseEntity<OrderDto> cancelOrder(
-            @PathVariable("orderId") Integer orderId) {
-
-        log.info("*** Cancel order with orderId: {}", orderId);
-
-        return ResponseEntity.ok(orderService.cancelOrder(orderId));
-    }
 }

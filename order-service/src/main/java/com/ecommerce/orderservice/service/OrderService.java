@@ -23,6 +23,4 @@ public interface OrderService {
     OrderDto cancel(Integer orderId);
 
     Boolean existsByOrderId(Integer orderId);
-
-    OrderDto cancelOrder(Integer orderId);
 }

@@ -59,7 +59,7 @@ public class OrderServiceImpl implements OrderService {
                 : orderRepository.findAllByCart_UserId(currentUserId, pageable);
 
         List<OrderDto> orderDtos = orders.stream()
-                .map(OrderMappingHelper::map)
+                .map(order -> OrderMappingHelper.map(order))
                 .map(this::enrich)
                 .toList();
         return new PageImpl<>(orderDtos, pageable, orders.getTotalElements());
@@ -183,17 +183,5 @@ public class OrderServiceImpl implements OrderService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication != null && authentication.getAuthorities().stream()
                 .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
-    }
-
-
-    @Override
-    public OrderDto cancelOrder(Integer orderId) {
-        log.info("OrderDto, service; cancel order by id: {}", orderId);
-
-        Order order = loadOrderForCurrentUser(orderId);
-
-        order.setStatus(OrderStatus.CANCELLED);
-
-        return OrderMappingHelper.map(orderRepository.save(order));
     }
 }
