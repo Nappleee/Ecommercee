@@ -4,32 +4,17 @@ import com.ecommerce.paymentservice.dto.OrderDto;
 import com.ecommerce.paymentservice.dto.UserDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
-import java.util.Map;
 
 @Component
+@RequiredArgsConstructor
 public class CallAPI {
 
     private final RestClient.Builder restClientBuilder;
-    private final String orderServiceUrl;
-    private final String authServiceUrl;
-
-    public CallAPI(
-            RestClient.Builder restClientBuilder,
-            @Value("${services.order.url:http://order-service:8084}") String orderServiceUrl,
-            @Value("${services.auth.url:http://auth-service:8088}") String authServiceUrl
-    ) {
-        this.restClientBuilder = restClientBuilder;
-        this.orderServiceUrl = orderServiceUrl;
-        this.authServiceUrl = authServiceUrl;
-    }
-    @Value("${services.product.url:http://product-service:8086}")
-    private String productServiceUrl;
 
     public OrderDto receiverPaymentDto(Integer orderId, String token) {
-        return restClientBuilder.baseUrl(orderServiceUrl).build()
+        return restClientBuilder.baseUrl("http://ORDER-SERVICE").build()
                 .get()
                 .uri("/api/orders/{id}", orderId)
                 .header(HttpHeaders.AUTHORIZATION, token)
@@ -38,38 +23,11 @@ public class CallAPI {
     }
 
     public UserDto receiverUserDto(Long userId, String token) {
-        Map<?, ?> response = restClientBuilder.baseUrl(authServiceUrl).build()
+        return restClientBuilder.baseUrl("http://AUTH-SERVICE").build()
                 .get()
-                .uri("/api/v1/users/{id}", userId)
+                .uri("/api/manager/user/{id}", userId)
                 .header(HttpHeaders.AUTHORIZATION, token)
                 .retrieve()
-                .body(Map.class);
-        if (response == null || !(response.get("data") instanceof Map<?, ?> data)) {
-            return null;
-        }
-        UserDto userDto = new UserDto();
-        userDto.setId(asLong(data.get("id")));
-        userDto.setFullname((String) data.get("fullname"));
-        userDto.setUsername((String) data.get("username"));
-        userDto.setEmail((String) data.get("email"));
-        userDto.setGender((String) data.get("gender"));
-        userDto.setPhone((String) data.get("phone"));
-        userDto.setAvatar((String) data.get("avatar"));
-        return userDto;
-    }
-
-    private Long asLong(Object value) {
-        return value instanceof Number number ? number.longValue() : null;
-    }
-
-    public void decrementProductQuantity(Integer productId, Integer amount, String token) {
-        restClientBuilder.baseUrl(productServiceUrl).build()
-                .patch()
-                .uri(uriBuilder -> uriBuilder.path("/api/products/{id}/decrement")
-                        .queryParam("amount", amount)
-                        .build(productId))
-                .header(HttpHeaders.AUTHORIZATION, token)
-                .retrieve()
-                .toBodilessEntity();
+                .body(UserDto.class);
     }
 }

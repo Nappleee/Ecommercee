@@ -44,6 +44,7 @@ public class SecurityConfig {
                         // Các API public (login, signup, swagger...)
                         // được truy cập mà không cần JWT
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
 
                         // Mọi endpoint còn lại đều yêu cầu người dùng đã xác thực
                         .anyRequest().authenticated()

@@ -35,7 +35,7 @@ public interface CartMappingHelper {
         return Cart.builder()
                 .cartId(cartDto.getCartId())
                 .userId(cartDto.getUserId())
-                .orders((cartDto.getOrderDtos() == null ? java.util.Set.<OrderDto>of() : cartDto.getOrderDtos())
+                .orders(cartDto.getOrderDtos()
                         .stream()
                         .map(orderDto -> Order.builder()
                                 .orderId(orderDto.getOrderId())

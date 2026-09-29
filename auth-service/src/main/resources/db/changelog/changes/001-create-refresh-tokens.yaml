@@ -2,12 +2,6 @@ databaseChangeLog:
   - changeSet:
       id: 001-create-refresh-tokens
       author: nappleee
-      preConditions:
-        - onFail: MARK_RAN
-        - onError: HALT
-        - not:
-            tableExists:
-              tableName: refresh_tokens
       changes:
         - createTable:
             tableName: refresh_tokens

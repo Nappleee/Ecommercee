@@ -20,34 +20,19 @@ spring:
   liquibase:
     enabled: false
 
-services:
-  order:
-    url: ${ORDER_SERVICE_URL:http://order-service:8084}
-  auth:
-    url: ${AUTH_SERVICE_URL:http://auth-service:8088}
-  product:
-    url: ${PRODUCT_SERVICE_URL:http://product-service:8086}
-
   jwt:
     secret: ${JWT_SECRET:Zm9vLWJhci1iYXNlNjQtc2VjcmV0LWZvci1sb2NhbC1kZXYtMzIx}
     issuer: ${JWT_ISSUER:ecommerce-auth-service}
-
-services:
-  order:
-    url: ${ORDER_SERVICE_URL:http://order-service:8084}
-  auth:
-    url: ${AUTH_SERVICE_URL:http://auth-service:8088}
-kafka:
-  bootstrap.servers: ${KAFKA_SERVERS:kafka:9092}
-  producer:
-    retries: 3
-    batch-size: 16384
-    buffer-memory: 33554432
+  kafka:
+      bootstrap-servers: ${KAFKA_SERVERS:localhost:9092}
+      producer:
+        retries: 3
+        batch-size: 16384
+        buffer-memory: 33554432
 ---
 payment:
   kafka:
     consumer-group-id: payment-groupId
----
 management:
   endpoints:
     web:

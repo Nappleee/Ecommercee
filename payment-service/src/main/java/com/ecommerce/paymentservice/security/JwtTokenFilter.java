@@ -16,14 +16,4 @@ public final class JwtTokenFilter {
         }
         return "Bearer " + jwtAuthenticationToken.getToken().getTokenValue();
     }
-    public static Long getUserIdFromToken() {
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
-        if (!(authentication instanceof JwtAuthenticationToken jwtAuthenticationToken)) {
-            return null;
-        }
-
-        return jwtAuthenticationToken.getToken().getClaim("userId");
-    }
 }

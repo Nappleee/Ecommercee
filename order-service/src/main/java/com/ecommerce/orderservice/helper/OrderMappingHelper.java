@@ -4,7 +4,6 @@ import com.ecommerce.orderservice.dto.order.CartDto;
 import com.ecommerce.orderservice.dto.order.OrderDto;
 import com.ecommerce.orderservice.entity.Cart;
 import com.ecommerce.orderservice.entity.Order;
-import com.ecommerce.orderservice.entity.OrderStatus;
 
 public interface OrderMappingHelper {
     static OrderDto map(Order order) {
@@ -15,8 +14,6 @@ public interface OrderMappingHelper {
                 .orderDesc(order.getOrderDesc())
                 .orderFee(order.getOrderFee())
                 .productId(order.getProductId())
-                .quantity(order.getQuantity())
-                .status(order.getStatus() == null ? OrderStatus.PENDING : order.getStatus())
                 .cartDto(CartDto.builder()
                         .cartId(order.getCart().getCartId())
                         .userId(order.getCart().getUserId())
@@ -32,8 +29,6 @@ public interface OrderMappingHelper {
                 .orderDesc(orderDto.getOrderDesc())
                 .orderFee(orderDto.getOrderFee())
                 .productId(orderDto.getProductId())
-                .quantity(orderDto.getQuantity())
-                .status(orderDto.getStatus())
                 .cart(Cart.builder()
                         .cartId(orderDto.getCartDto().getCartId())
                         .userId(orderDto.getCartDto().getUserId())

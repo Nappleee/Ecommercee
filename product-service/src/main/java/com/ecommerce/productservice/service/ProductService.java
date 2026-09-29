@@ -15,8 +15,5 @@ public interface ProductService {
 
     ProductDto update(Integer productId, ProductDto productDto);
 
-    ProductDto decrementQuantity(Integer productId, Integer amount);
-
-    ProductDto incrementQuantity(Integer productId, Integer amount);
     void deleteById(Integer productId);
 }
