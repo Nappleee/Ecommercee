@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { formatPrice } from "@/lib/utils";
-import { authApi, cartApi, orderApi, paymentApi, productApi } from "@/lib/api";
+import { authApi, cartApi, orderApi, paymentApi } from "@/lib/api";
 import type { ApiResponse, UserResponse } from "@/types";
 
 type Step = 1 | 2 | 3;
@@ -110,11 +110,6 @@ export default function CheckoutPage() {
         paymentStatus: paymentMethod === "COD" ? "NOT_STARTED" : "IN_PROGRESS",
         orderId: newOrderId,
       });
-      await productApi.decrementQuantity(
-        firstItem.product.productId,
-        firstItem.quantity,
-      );
-
       setOrderId(newOrderId);
       clearCart();
       setStep(3);

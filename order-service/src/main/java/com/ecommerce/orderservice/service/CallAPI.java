@@ -40,4 +40,22 @@ public class CallAPI {
                 .retrieve()
                 .body(ProductDto.class);
     }
+
+    public void decrementProductQuantity(Integer productId, Integer amount) {
+        updateProductQuantity(productId, amount, "decrement");
+    }
+
+    public void incrementProductQuantity(Integer productId, Integer amount) {
+        updateProductQuantity(productId, amount, "increment");
+    }
+
+    private void updateProductQuantity(Integer productId, Integer amount, String operation) {
+        restClientBuilder.baseUrl("http://product-service:8086").build()
+                .patch()
+                .uri(uriBuilder -> uriBuilder.path("/api/products/{id}/" + operation)
+                        .queryParam("amount", amount)
+                        .build(productId))
+                .retrieve()
+                .toBodilessEntity();
+    }
 }

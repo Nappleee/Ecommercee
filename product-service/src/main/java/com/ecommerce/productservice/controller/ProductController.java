@@ -88,4 +88,12 @@ public class ProductController {
 
         return ResponseEntity.ok().build();
     }
+
+    @PatchMapping("/{id}/increment")
+    public ResponseEntity<Void> incrementQuantity(
+            @PathVariable Integer id,
+            @RequestParam Integer amount) {
+        productService.incrementQuantity(id, amount);
+        return ResponseEntity.ok().build();
+    }
 }

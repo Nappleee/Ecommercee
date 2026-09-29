@@ -84,6 +84,7 @@ export interface Product {
   sku?: string;
   priceUnit: number;
   quantity: number;
+  product?: Product;
   category?: Category;
   description?: string;
 }
@@ -109,7 +110,10 @@ export interface Order {
   orderDesc?: string;
   orderFee: number;
   productId: number;
+  quantity: number;
+  product?: Product;
   cart?: Cart;
+  orderedBy?: UserResponse;
   status?: "PENDING" | "COMPLETED" | "CANCELLED";
 }
 

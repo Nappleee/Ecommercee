@@ -18,4 +18,6 @@ public interface ProductService {
     void deleteById(Integer productId);
 
     void decrementQuantity(Integer  id, Integer amount);
+
+    void incrementQuantity(Integer id, Integer amount);
 }

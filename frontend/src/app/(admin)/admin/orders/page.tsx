@@ -76,9 +76,10 @@ export default function AdminOrdersPage() {
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50">
                 <th className="text-left px-4 py-3 font-semibold text-gray-700">Mã đơn</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-700">Người đặt</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-700">Ngày đặt</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-700">Mô tả</th>
-                <th className="text-right px-4 py-3 font-semibold text-gray-700">Tổng tiền</th>
+                <th className="text-right px-4 py-3 font-semibold text-gray-700">SL / Tổng tiền</th>
                 <th className="text-center px-4 py-3 font-semibold text-gray-700">Trạng thái</th>
                 <th className="text-center px-4 py-3 font-semibold text-gray-700">Thao tác</th>
               </tr>
@@ -87,7 +88,7 @@ export default function AdminOrdersPage() {
               {isLoading ? (
                 [...Array(5)].map((_, i) => (
                   <tr key={i} className="border-b border-gray-100">
-                    {[...Array(6)].map((_, j) => (
+                    {[...Array(7)].map((_, j) => (
                       <td key={j} className="px-4 py-3">
                         <div className="h-4 bg-gray-200 rounded animate-pulse" />
                       </td>
@@ -96,13 +97,13 @@ export default function AdminOrdersPage() {
                 ))
               ) : isError ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-red-600">
+                  <td colSpan={7} className="text-center py-12 text-red-600">
                     Không thể tải danh sách đơn hàng.
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-gray-500">
+                  <td colSpan={7} className="text-center py-12 text-gray-500">
                     <ShoppingBag className="h-12 w-12 mx-auto mb-2 text-gray-300" />
                     Chưa có đơn hàng nào
                   </td>
@@ -118,6 +119,9 @@ export default function AdminOrdersPage() {
                         <span className="font-medium text-gray-900">#{order.orderId}</span>
                       </div>
                     </td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {order.orderedBy?.fullName ?? order.orderedBy?.fullname ?? order.orderedBy?.username ?? "—"}
+                    </td>
                     <td className="px-4 py-3 text-gray-500">
                       <div className="flex items-center gap-1">
                         <Clock className="h-3.5 w-3.5" />
@@ -128,7 +132,8 @@ export default function AdminOrdersPage() {
                       {order.orderDesc ?? "—"}
                     </td>
                     <td className="px-4 py-3 text-right font-bold text-orange-500">
-                      {formatPrice(order.orderFee ?? 0)}
+                      <div>{order.quantity ?? 0} sản phẩm</div>
+                      <div>{formatPrice(order.orderFee ?? 0)}</div>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <Badge variant={order.status === "CANCELLED" ? "danger" : order.status === "COMPLETED" ? "success" : "warning"}>
@@ -191,8 +196,16 @@ export default function AdminOrdersPage() {
               ) : (
                 <>
                   <div className="flex justify-between gap-4">
+                    <span className="text-gray-500">Người đặt</span>
+                    <span>{selectedOrder.orderedBy?.fullName ?? selectedOrder.orderedBy?.fullname ?? selectedOrder.orderedBy?.username ?? "—"}</span>
+                  </div>
+                  <div className="flex justify-between gap-4">
                     <span className="text-gray-500">Ngày đặt</span>
                     <span>{selectedOrder.orderDate ? formatDate(selectedOrder.orderDate) : "—"}</span>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-gray-500">Số lượng</span>
+                    <span>{selectedOrder.quantity ?? 0}</span>
                   </div>
                   <div className="flex justify-between gap-4">
                     <span className="text-gray-500">Tổng tiền</span>

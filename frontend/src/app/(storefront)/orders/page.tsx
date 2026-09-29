@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ShoppingBag, Package, Clock, ArrowRight, XCircle } from "lucide-react";
+import { ShoppingBag, Package, Clock, ArrowRight, XCircle, Eye } from "lucide-react";
 import { orderApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { Badge } from "@/components/ui/Badge";
@@ -16,6 +16,7 @@ export default function OrdersPage() {
   const router = useRouter();
   const { isAuthenticated, hasHydrated } = useAuthStore();
   const [cancellingId, setCancellingId] = useState<number | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 
   useEffect(() => {
     if (hasHydrated && !isAuthenticated) router.replace("/login?redirect=/orders");
@@ -31,6 +32,11 @@ export default function OrdersPage() {
   });
 
   const orders = data?.content ?? [];
+  const { data: selectedOrder } = useQuery({
+    queryKey: ["my-order", selectedOrderId],
+    queryFn: async () => (await orderApi.getById(selectedOrderId as number)).data as Order,
+    enabled: selectedOrderId !== null,
+  });
   const cancelOrder = async (orderId: number) => {
     if (!window.confirm("Bạn có chắc muốn hủy đơn hàng này không?")) return;
     setCancellingId(orderId);
@@ -94,6 +100,9 @@ export default function OrdersPage() {
                       <XCircle className="h-4 w-4" /> Hủy đơn
                     </Button>
                   )}
+                  <Button variant="outline" size="sm" onClick={() => setSelectedOrderId(order.orderId)}>
+                    <Eye className="h-4 w-4" /> Chi tiết
+                  </Button>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
@@ -110,6 +119,23 @@ export default function OrdersPage() {
               )}
             </div>
           ))}
+        </div>
+      )}
+      {selectedOrderId !== null && selectedOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-bold">Chi tiết đơn #{selectedOrder.orderId}</h2>
+              <button type="button" onClick={() => setSelectedOrderId(null)} className="text-gray-500">Đóng</button>
+            </div>
+            <div className="space-y-3 text-sm">
+              <p><span className="text-gray-500">Người đặt:</span> {selectedOrder.orderedBy?.fullName ?? selectedOrder.orderedBy?.fullname ?? selectedOrder.orderedBy?.username ?? "—"}</p>
+              <p><span className="text-gray-500">Thời gian đặt:</span> {formatDate(selectedOrder.orderDate)}</p>
+              <p><span className="text-gray-500">Sản phẩm:</span> {selectedOrder.product?.productTitle ?? `#${selectedOrder.productId}`}</p>
+              <p><span className="text-gray-500">Số lượng:</span> {selectedOrder.quantity}</p>
+              <p><span className="text-gray-500">Tổng tiền:</span> <b className="text-orange-500">{formatPrice(selectedOrder.orderFee ?? 0)}</b></p>
+            </div>
+          </div>
         </div>
       )}
     </div>

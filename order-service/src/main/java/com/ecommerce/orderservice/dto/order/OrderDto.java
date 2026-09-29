@@ -9,6 +9,7 @@ import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import com.ecommerce.orderservice.constrant.AppConstant;
 import com.ecommerce.orderservice.dto.product.ProductDto;
+import com.ecommerce.orderservice.dto.user.UserDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -40,6 +41,8 @@ public class OrderDto implements Serializable {
     private Double orderFee;
 
     private Integer productId;
+    private Integer quantity;
+    private String status;
 
     @JsonProperty("product")
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -48,5 +51,9 @@ public class OrderDto implements Serializable {
     @JsonProperty("cart")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private CartDto cartDto;
+
+    @JsonProperty("orderedBy")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private UserDto orderedBy;
 
 }
