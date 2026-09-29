@@ -106,6 +106,12 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public PaymentDto save(PaymentDto paymentDto) {
         log.info("PaymentDto, service; save payment");
+        String token = JwtTokenFilter.getTokenFromRequest();
+        UserDto currentUser = callAPI.receiverCurrentUserDto(token);
+        if (currentUser == null || currentUser.getId() == null) {
+            throw new IllegalStateException("Unable to resolve the authenticated user for payment");
+        }
+        paymentDto.setUserId(currentUser.getId());
         if (paymentRepository.existsByOrderIdAndIsPayed(paymentDto.getOrderId())) {
             throw new PaymentNotFoundException("Order has already been paid.");
         }
@@ -116,6 +122,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .paymentStatus(savedPaymentDto.getPaymentStatus())
                 .orderId(savedPaymentDto.getOrderId())
                 .userId(savedPaymentDto.getUserId())
+                .recipient(currentUser.getEmail())
                 .build();
         eventProducer.send(KafkaConstant.STATUS_PAYMENT_SUCCESSFUL, gson.toJson(kafkaPaymentDto));
         return savedPaymentDto;
